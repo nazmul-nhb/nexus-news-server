@@ -37,8 +37,10 @@ const run = async () => {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
-        const userCollection = client.db("nexusDB").collection("users");
 
+        const userCollection = client.db("nexusDB").collection("users");
+        const newsCollection = client.db("nexusDB").collection("news");
+        const publisherCollection = client.db("nexusDB").collection("publishers");
 
 
 
@@ -48,6 +50,7 @@ const run = async () => {
             const user = req.body;
             const query = { email: user.email };
             const existingUser = await userCollection.findOne(query);
+
             if (existingUser) {
                 return res.send({ message: 'User Already exists,', insertedId: null })
             }
@@ -56,7 +59,23 @@ const run = async () => {
 
             res.send(result);
         })
-        
+
+        // post a news 
+        app.post('/news', async (req, res) => {
+            const news = req.body;
+
+            const result = await newsCollection.insertOne(news);
+
+            res.send(result);
+        })
+
+        // get publishers
+        app.get('/publishers', async (req, res) => {
+            const result = await publisherCollection.find().toArray();
+
+            res.send(result);
+        })
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });

@@ -39,7 +39,6 @@ const run = async () => {
         // await client.connect();
 
         const userCollection = client.db("nexusDB").collection("users");
-        // const newsCollection = client.db("nexusDB").collection("news");
         const publisherCollection = client.db("nexusDB").collection("publishers");
         const articleCollection = client.db("nexusDB").collection("articles");
 
@@ -48,8 +47,7 @@ const run = async () => {
 
         app.post('/users', async (req, res) => {
             const user = req.body;
-            const query = { email: user.email };
-            const existingUser = await userCollection.findOne(query);
+            const userExists = await userCollection.findOne({ email: user.email });
             const imageExists = await userCollection.findOne({ profile_image: user.profile_image });
 
             // update profile image
@@ -62,8 +60,8 @@ const run = async () => {
                 return res.send(result);
             }
 
-            if (existingUser) {
-                return res.send({ message: 'User Already exists,', insertedId: null })
+            if (userExists) {
+                return res.send({ message: 'User Already Exists!' })
             }
 
             const result = await userCollection.insertOne(user);
@@ -73,9 +71,14 @@ const run = async () => {
 
         // post an article 
         app.post('/articles', async (req, res) => {
-            const news = req.body;
+            const article = req.body;
+            const articleExists = await articleCollection.findOne({ headline: article.headline });
 
-            const result = await articleCollection.insertOne(news);
+            if (articleExists) {
+                return res.send({ message: 'Article Already Exists!' })
+            }
+
+            const result = await articleCollection.insertOne(article);
 
             res.send(result);
         })

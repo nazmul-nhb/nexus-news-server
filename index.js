@@ -83,6 +83,49 @@ const run = async () => {
             res.send(result);
         })
 
+        // get articles
+        app.get('/articles', async (req, res) => {
+            // manage sort query from client
+            let sortBy = {};
+            switch (req.query.sort) {
+                case 'view_descending':
+                    sortBy = { view_count: -1 }
+                    break;
+                case 'view_ascending':
+                    sortBy = { view_count: 1 }
+                    break;
+                case 'time_descending':
+                    sortBy = { posted_on: -1 }
+                    break;
+                case 'time_ascending':
+                    sortBy = { posted_on: 1 }
+                    break;
+
+                default:
+                    sortBy = {};
+                    break;
+            }
+
+            let filter = {};
+            // filter by tag query from client
+            if (req.query.tag) {
+                filter.tags = req.query.tag;
+            }
+            // filter by publisher
+            if (req.query.publisher) {
+                filter.publisher = req.query.publisher;
+            }
+            // search in article headlines/titles
+            if (req.query.search) {
+                filter.headline = { $regex: req.query.search, $options: "i" };
+            }
+
+
+            const result = await articleCollection.find(filter).sort(sortBy).project({ description: 0 }).toArray();
+
+            res.send(result);
+        })
+
         // get publishers
         app.get('/publishers', async (req, res) => {
             const result = await publisherCollection.find().toArray();

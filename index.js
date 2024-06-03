@@ -128,7 +128,20 @@ const run = async () => {
             const result = await articleCollection.find(filter).sort(sortBy).limit(size).project({ description: 0 }).toArray();
 
             res.send(result);
-        })
+        });
+
+        // get single article
+        app.get('/articles/:id', async (req, res) => {
+            const article_id = req.params.id;
+            const filter = { _id: new ObjectId(article_id) };
+            const updateViewCount = { $inc: { view_count: 1 } }; 
+
+            await articleCollection.updateOne(filter, updateViewCount);
+
+            const result = await articleCollection.findOne(filter);
+
+            res.send(result);
+        });
 
         // get publishers
         app.get('/publishers', async (req, res) => {

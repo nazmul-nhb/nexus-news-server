@@ -124,7 +124,6 @@ const run = async () => {
                 filter.headline = { $regex: req.query.search, $options: "i" };
             }
 
-
             const result = await articleCollection.find(filter).sort(sortBy).limit(size).project({ description: 0 }).toArray();
 
             res.send(result);
@@ -134,11 +133,21 @@ const run = async () => {
         app.get('/articles/:id', async (req, res) => {
             const article_id = req.params.id;
             const filter = { _id: new ObjectId(article_id) };
-            const updateViewCount = { $inc: { view_count: 1 } }; 
+            const updateViewCount = { $inc: { view_count: 1 } };
 
             await articleCollection.updateOne(filter, updateViewCount);
 
             const result = await articleCollection.findOne(filter);
+
+            res.send(result);
+        });
+
+        // get user's articles
+        app.get('/user/articles/:email', async (req, res) => {
+            const user_email = req.params.email;
+            const filter = { posted_by_email: user_email };
+
+            const result = await articleCollection.find(filter).toArray();
 
             res.send(result);
         });
@@ -160,7 +169,7 @@ const run = async () => {
                 if (tag.__isNew__) {
                     delete tag.__isNew__;
                     const existingTag = await tagCollection.findOne({ value: tag.value });
-                    if(!existingTag){
+                    if (!existingTag) {
                         newTagsToAdd.push(tag);
                     }
                 }
@@ -183,7 +192,7 @@ const run = async () => {
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        console.log("Successfully Connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();

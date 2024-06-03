@@ -152,6 +152,17 @@ const run = async () => {
             res.send(result);
         });
 
+        // delete user's article
+        app.delete('/articles/:id', async (req, res) => {
+            const article_id = req.params.id;
+            const user_email = req.query.email;
+            const query = { _id: new ObjectId(article_id), posted_by_email: user_email };
+
+            const result = await articleCollection.deleteOne(query);
+
+            res.send(result);
+        });
+
         // get publishers
         app.get('/publishers', async (req, res) => {
             const result = await publisherCollection.find().toArray();

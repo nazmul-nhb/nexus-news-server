@@ -41,6 +41,7 @@ const run = async () => {
         const userCollection = client.db("nexusDB").collection("users");
         const publisherCollection = client.db("nexusDB").collection("publishers");
         const articleCollection = client.db("nexusDB").collection("articles");
+        const tagCollection = client.db("nexusDB").collection("tags");
 
 
 
@@ -85,6 +86,9 @@ const run = async () => {
 
         // get articles
         app.get('/articles', async (req, res) => {
+            // define data limit
+            const size = parseInt(req.query.size);
+
             // manage sort query from client
             let sortBy = {};
             switch (req.query.sort) {
@@ -121,7 +125,7 @@ const run = async () => {
             }
 
 
-            const result = await articleCollection.find(filter).sort(sortBy).project({ description: 0 }).toArray();
+            const result = await articleCollection.find(filter).sort(sortBy).limit(size).project({ description: 0 }).toArray();
 
             res.send(result);
         })
@@ -132,6 +136,36 @@ const run = async () => {
 
             res.send(result);
         })
+
+        // post new tags while posting an article
+        app.post('/tags', async (req, res) => {
+            const tags = req.body;
+            const newTagsToAdd = [];
+
+            // filter new tags
+            for (const tag of tags) {
+                if (tag.__isNew__) {
+                    delete tag.__isNew__;
+                    const existingTag = await tagCollection.findOne({ value: tag.value });
+                    if(!existingTag){
+                        newTagsToAdd.push(tag);
+                    }
+                }
+            }
+
+            console.log(newTagsToAdd);
+
+            const result = await tagCollection.insertMany(newTagsToAdd);
+
+            res.send(result);
+        });
+
+        // get tags in the form as an array of objects with value and label
+        app.get('/tags', async (req, res) => {
+            const result = await tagCollection.find().toArray();
+
+            res.send(result);
+        });
 
 
         // Send a ping to confirm a successful connection

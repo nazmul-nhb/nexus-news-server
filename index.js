@@ -49,13 +49,13 @@ const run = async () => {
         app.post('/users', async (req, res) => {
             const user = req.body;
             const userExists = await userCollection.findOne({ email: user.email });
-            const imageExists = await userCollection.findOne({ profile_image: user.profile_image });
-
+            const imageExists = await userCollection.findOne({ email: user.email, profile_image: user.profile_image });
+            console.log(user.name);
             // update profile image
-            if (!imageExists) {
+            if (!imageExists || (!user.profile_image && user.name)) {
                 const filter = { email: user.email };
                 const options = { upsert: true };
-                const updatedUser = { $set: { profile_image: user.profile_image } };
+                const updatedUser = { $set: { ...user } };
                 const result = await userCollection.updateOne(filter, updatedUser, options);
 
                 return res.send(result);
@@ -110,7 +110,7 @@ const run = async () => {
                     break;
             }
 
-            let filter = {};
+            let filter = { status: "Approved" };
             // filter by tag query from client
             if (req.query.tag) {
                 filter.tags = req.query.tag;
@@ -123,7 +123,7 @@ const run = async () => {
             if (req.query.search) {
                 filter.headline = { $regex: req.query.search, $options: "i" };
             }
-
+            delete filter.status; // remove this line after admin arrives :D
             const result = await articleCollection.find(filter).sort(sortBy).limit(size).project({ description: 0 }).toArray();
 
             res.send(result);

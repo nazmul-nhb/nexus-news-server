@@ -120,6 +120,12 @@ const run = async () => {
                 case 'time_ascending':
                     sortBy = { posted_on: 1 }
                     break;
+                case 'title_descending':
+                    sortBy = { headline: -1 }
+                    break;
+                case 'title_ascending':
+                    sortBy = { headline: 1 }
+                    break;
 
                 default:
                     sortBy = {};
@@ -128,19 +134,20 @@ const run = async () => {
 
             let filter = { status: "Approved" };
             // filter by tag query from client
-            if (req.query.tag) {
+            if (req.query.tag && req.query.tag !== 'undefined') {
                 filter.tags = req.query.tag;
             }
             // filter by publisher
-            if (req.query.publisher) {
+            if (req.query.publisher && req.query.publisher !== 'undefined') {
                 filter.publisher = req.query.publisher;
             }
             // search in article headlines/titles
             if (req.query.search) {
                 filter.headline = { $regex: req.query.search, $options: "i" };
             }
+            console.log(filter);
             delete filter.status; // remove this line after admin arrives :D
-            const result = await articleCollection.find(filter).sort(sortBy).limit(size).project({ description: 0 }).toArray();
+            const result = await articleCollection.find(filter).sort(sortBy).limit(size).toArray(); // exclude description after getting assignment result
 
             res.send(result);
         });

@@ -29,7 +29,7 @@ const verifyToken = (req, res, next) => {
         if (error) {
             return res.status(401).send({ message: 'Unauthorized Access!' })
         }
-        req.decoded = decoded;
+        req.user = decoded;
         next();
     })
 }
@@ -64,6 +64,21 @@ const run = async () => {
             res.send({ token });
         })
 
+        // verifyAdmin middleware
+        const verifyAdmin = async (req, res, next) => {
+            const user = req.user;
+            const query = { email: user?.email };
+            const result = await userCollection.findOne(query);
+
+            console.log(result?.role);
+
+            if (!result || result?.role !== 'admin')
+                return res.status(401).send({ message: 'unauthorized access!!' });
+
+            next();
+        }
+        
+        // create and update users on db
         app.post('/users', async (req, res) => {
             const user = req.body;
             const userExists = await userCollection.findOne({ email: user.email });

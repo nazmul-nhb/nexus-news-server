@@ -18,9 +18,23 @@ const port = process.env.PORT || 5000;
 app.use(cors({ origin: corsOptions }));
 app.use(express.json());
 
+const verifyToken = (req, res, next) => {
+    if (!req.headers.authorization) {
+        return res.status(401).send({ message: 'Unauthorized Access!' });
+    }
 
+    const token = req.headers.authorization.split(' ')[1];
 
-// MongoDB Codes:
+    jwt.verify(token, process.env.TOKEN_SECRET, (error, decoded) => {
+        if (error) {
+            return res.status(401).send({ message: 'Unauthorized Access!' })
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
+
+// MongoDB Codes
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qmbsuxs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -44,7 +58,11 @@ const run = async () => {
         const tagCollection = client.db("nexusDB").collection("tags");
 
 
-
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.TOKEN_SECRET, { expiresIn: '1h' });
+            res.send({ token });
+        })
 
         app.post('/users', async (req, res) => {
             const user = req.body;
@@ -71,15 +89,15 @@ const run = async () => {
             res.send(result);
         });
 
-        // get all users or one user
-        app.get('/users', async (req, res) => {
+        // get all users
+        app.get('/users', verifyToken, async (req, res) => {
             const result = await userCollection.find().toArray();
 
             res.send(result);
         });
 
         // get single user info
-        app.get('/users/single', async (req, res) => {
+        app.get('/users/single', verifyToken, async (req, res) => {
             const email = req.query.email;
 
             const result = await userCollection.findOne({ email });
@@ -87,7 +105,7 @@ const run = async () => {
         });
 
         // post an article 
-        app.post('/articles', async (req, res) => {
+        app.post('/articles', verifyToken, async (req, res) => {
             const article = req.body;
             const articleExists = await articleCollection.findOne({ headline: article.headline });
 
@@ -135,7 +153,11 @@ const run = async () => {
             let filter = { status: "Approved" };
             // filter by tag query from client
             if (req.query.tag && req.query.tag !== 'undefined') {
-                filter.tags = req.query.tag;
+                if (Array.isArray(req.query.tag)) {
+                    filter.tags = { $in: req.query.tag };
+                } else {
+                    filter.tags = req.query.tag;
+                }
             }
             // filter by publisher
             if (req.query.publisher && req.query.publisher !== 'undefined') {
@@ -166,7 +188,7 @@ const run = async () => {
         });
 
         // get user's articles
-        app.get('/user/articles/:email', async (req, res) => {
+        app.get('/user/articles/:email', verifyToken, async (req, res) => {
             const user_email = req.params.email;
             const filter = { posted_by_email: user_email };
 
@@ -176,7 +198,7 @@ const run = async () => {
         });
 
         // delete user's article
-        app.delete('/articles/:id', async (req, res) => {
+        app.delete('/articles/:id', verifyToken, async (req, res) => {
             const article_id = req.params.id;
             const user_email = req.query.email;
             const query = { _id: new ObjectId(article_id), posted_by_email: user_email };
@@ -194,7 +216,7 @@ const run = async () => {
         })
 
         // post new tags while posting an article
-        app.post('/tags', async (req, res) => {
+        app.post('/tags', verifyToken, async (req, res) => {
             const tags = req.body;
             const newTagsToAdd = [];
 

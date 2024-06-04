@@ -57,6 +57,7 @@ const run = async () => {
                 const options = { upsert: true };
                 const updatedUser = { $set: { ...user } };
                 const result = await userCollection.updateOne(filter, updatedUser, options);
+                // console.log('updated: ', result);
 
                 return res.send(result);
             }
@@ -68,7 +69,22 @@ const run = async () => {
             const result = await userCollection.insertOne(user);
 
             res.send(result);
-        })
+        });
+
+        // get all users or one user
+        app.get('/users', async (req, res) => {
+            const result = await userCollection.find().toArray();
+
+            res.send(result);
+        });
+
+        // get single user info
+        app.get('/users/single', async (req, res) => {
+            const email = req.query.email;
+
+            const result = await userCollection.findOne({ email });
+            res.send(result);
+        });
 
         // post an article 
         app.post('/articles', async (req, res) => {

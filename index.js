@@ -122,11 +122,11 @@ const run = async () => {
         });
 
         // make a user admin
-        app.put('/users', verifyToken, async (req, res) => {
+        app.put('/users', verifyToken, verifyAdmin, async (req, res) => {
             const user = req.body;
             const query = { email: user.email };
             const options = { upsert: true };
-            const updatedUser = { $set: { ...user, admin_since: Date.now() } };
+            const updatedUser = { $set: user };
 
             const result = await userCollection.updateOne(query, updatedUser, options);
 
@@ -188,6 +188,7 @@ const run = async () => {
                     filter.tags = req.query.tag;
                 }
             }
+
             // filter by publisher
             if (req.query.publisher && req.query.publisher !== 'undefined') {
                 filter.publisher = req.query.publisher;
@@ -196,8 +197,13 @@ const run = async () => {
             if (req.query.search) {
                 filter.headline = { $regex: req.query.search, $options: "i" };
             }
+
             console.log(filter);
-            delete filter.status; // remove this line after admin arrives :D
+
+            // if (req.query.role === 'admin') {
+            //     delete filter.status;
+            // }
+
             const result = await articleCollection.find(filter).sort(sortBy).limit(size).toArray(); // exclude description after getting assignment result
 
             res.send(result);
@@ -225,6 +231,70 @@ const run = async () => {
 
             res.send(result);
         });
+
+        // get all articles for admin
+        app.get('/all-articles', verifyToken, verifyAdmin, async (req, res) => {
+            // define limit
+            const size = parseInt(req.query.size);
+
+            // manage sort query from client
+            let sortBy = {};
+            switch (req.query.sort) {
+                case 'view_descending':
+                    sortBy = { view_count: -1 }
+                    break;
+                case 'view_ascending':
+                    sortBy = { view_count: 1 }
+                    break;
+                case 'time_descending':
+                    sortBy = { posted_on: -1 }
+                    break;
+                case 'time_ascending':
+                    sortBy = { posted_on: 1 }
+                    break;
+                case 'title_descending':
+                    sortBy = { headline: -1 }
+                    break;
+                case 'title_ascending':
+                    sortBy = { headline: 1 }
+                    break;
+
+                default:
+                    sortBy = {};
+                    break;
+            }
+
+            let filter = { status: "Approved" };
+
+            // filter by tag query from client
+            if (req.query.tag && req.query.tag !== 'undefined') {
+                if (Array.isArray(req.query.tag)) {
+                    filter.tags = { $in: req.query.tag };
+                } else {
+                    filter.tags = req.query.tag;
+                }
+            }
+            // filter by publisher
+            if (req.query.publisher && req.query.publisher !== 'undefined') {
+                filter.publisher = req.query.publisher;
+            }
+            // search in article headlines/titles
+            if (req.query.search) {
+                filter.headline = { $regex: req.query.search, $options: "i" };
+            }
+
+            // make extra secured
+            if (req.query.role === 'admin') {
+                delete filter.status;
+            }
+
+            const include = { _id: 1, headline: 1, posted_by_email: 1, posted_on: 1, status: 1, publisher: 1 };
+
+            const result = await articleCollection.find(filter).sort(sortBy).project(include).limit(size).toArray();
+
+            res.send(result);
+        })
+
 
         // delete user's article
         app.delete('/articles/:id', verifyToken, async (req, res) => {

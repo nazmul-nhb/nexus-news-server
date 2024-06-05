@@ -288,7 +288,9 @@ const run = async () => {
                 delete filter.status;
             }
 
-            const include = { _id: 1, headline: 1, posted_by_email: 1, posted_on: 1, status: 1, publisher: 1 };
+            const include = {
+                _id: 1, headline: 1, posted_by_email: 1, posted_on: 1, status: 1, publisher: 1, isPremium: 1
+            };
 
             const result = await articleCollection.find(filter).sort(sortBy).project(include).limit(size).toArray();
 
@@ -306,6 +308,19 @@ const run = async () => {
 
             res.send(result);
         });
+
+        // update article
+        app.patch('/articles/:id', async (req, res) => {
+            const article_id = req.params.id;
+            const filter = { _id: new ObjectId(article_id) };
+            console.log('updated: ',req.body);
+            const updatedArticle = { $set: req.body };
+            const options = { upsert: true };
+
+            const result = await articleCollection.updateOne(filter, updatedArticle, options);
+
+            res.send(result);
+        })
 
         // get publishers
         app.get('/publishers', async (req, res) => {

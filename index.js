@@ -73,30 +73,32 @@ const run = async () => {
             console.log(result?.role);
 
             if (!result || result?.role !== 'admin')
-                return res.status(401).send({ message: 'unauthorized access!!' });
+                return res.status(401).send({ message: 'Unauthorized Access!' });
 
             next();
         }
-        
-        // create and update users on db
+
+        // create and update users on db during register, login & from profile page
         app.post('/users', async (req, res) => {
             const user = req.body;
             const userExists = await userCollection.findOne({ email: user.email });
             const imageExists = await userCollection.findOne({ email: user.email, profile_image: user.profile_image });
-            console.log(user.name);
+            const roleExists = await userCollection.findOne({ email: user.email, role: { $exists: true } });
+            console.log('role checking: ', roleExists);
             // update profile image
-            if (!imageExists || (!user.profile_image && user.name)) {
+            if (!imageExists || (!user.profile_image && user.name) || !roleExists) {
                 const filter = { email: user.email };
                 const options = { upsert: true };
-                const updatedUser = { $set: { ...user } };
+                const updatedUser = { $set: { ...user, role: 'user' } };
                 const result = await userCollection.updateOne(filter, updatedUser, options);
-                // console.log('updated: ', result);
+
+                console.log('updated: ', result);
 
                 return res.send(result);
             }
 
             if (userExists) {
-                return res.send({ message: 'User Already Exists!' })
+                return res.send({ message: 'Profile Up to Date!' })
             }
 
             const result = await userCollection.insertOne(user);
@@ -104,8 +106,8 @@ const run = async () => {
             res.send(result);
         });
 
-        // get all users
-        app.get('/users', verifyToken, async (req, res) => {
+        // get all users with admin account
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
             const result = await userCollection.find().toArray();
 
             res.send(result);
@@ -118,6 +120,18 @@ const run = async () => {
             const result = await userCollection.findOne({ email });
             res.send(result);
         });
+
+        // make a user admin
+        app.put('/users', verifyToken, async (req, res) => {
+            const user = req.body;
+            const query = { email: user.email };
+            const options = { upsert: true };
+            const updatedUser = { $set: { ...user, admin_since: Date.now() } };
+
+            const result = await userCollection.updateOne(query, updatedUser, options);
+
+            res.send(result);
+        })
 
         // post an article 
         app.post('/articles', verifyToken, async (req, res) => {

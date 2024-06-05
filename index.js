@@ -248,7 +248,7 @@ const run = async () => {
         app.post('/tags', verifyToken, async (req, res) => {
             const tags = req.body;
             const newTagsToAdd = [];
-
+            console.log(tags);
             // filter new tags
             for (const tag of tags) {
                 if (tag.__isNew__) {
@@ -262,9 +262,12 @@ const run = async () => {
 
             console.log(newTagsToAdd);
 
-            const result = await tagCollection.insertMany(newTagsToAdd);
-
-            res.send(result);
+            if (newTagsToAdd.length > 0) {
+                const result = await tagCollection.insertMany(newTagsToAdd);
+                res.send(result);
+            } else {
+                res.send({ message: 'No New Tags to Add' });
+            }
         });
 
         // get tags in the form as an array of objects with value and label

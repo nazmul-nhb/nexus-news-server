@@ -131,6 +131,15 @@ const run = async () => {
             const result = await userCollection.updateOne(query, updatedUser, options);
 
             res.send(result);
+        });
+
+        // get users count
+        app.get('/users-count', async (req, res) => {
+            const total_users = await userCollection.countDocuments({});
+            const normal_users = await userCollection.countDocuments({ isPremium: false || null });
+            const premium_users = await userCollection.countDocuments({ isPremium: true });
+
+            res.send({ total_users, normal_users, premium_users });
         })
 
         // post an article 
@@ -193,6 +202,7 @@ const run = async () => {
             if (req.query.publisher && req.query.publisher !== 'undefined') {
                 filter.publisher = req.query.publisher;
             }
+
             // search in article headlines/titles
             if (req.query.search) {
                 filter.headline = { $regex: req.query.search, $options: "i" };
@@ -209,8 +219,8 @@ const run = async () => {
             res.send(result);
         });
 
-        // get single article
-        app.get('/articles/:id', async (req, res) => {
+        // get single article for users
+        app.get('/articles/:id', verifyToken, async (req, res) => {
             const article_id = req.params.id;
             const filter = { _id: new ObjectId(article_id) };
             const updateViewCount = { $inc: { view_count: 1 } };
@@ -222,7 +232,7 @@ const run = async () => {
             res.send(result);
         });
 
-        // get user's articles
+        // get user's own articles
         app.get('/user/articles/:email', verifyToken, async (req, res) => {
             const user_email = req.params.email;
             const filter = { posted_by_email: user_email };
@@ -274,6 +284,7 @@ const run = async () => {
                     filter.tags = req.query.tag;
                 }
             }
+
             // filter by publisher
             if (req.query.publisher && req.query.publisher !== 'undefined') {
                 filter.publisher = req.query.publisher;

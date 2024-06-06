@@ -70,7 +70,7 @@ const run = async () => {
             const query = { email: user?.email };
             const result = await userCollection.findOne(query);
 
-            console.log(result?.role);
+            // console.log(result?.role);
 
             if (!result || result?.role !== 'admin')
                 return res.status(401).send({ message: 'Unauthorized Access!' });
@@ -84,7 +84,7 @@ const run = async () => {
             const userExists = await userCollection.findOne({ email: user.email });
             const imageExists = await userCollection.findOne({ email: user.email, profile_image: user.profile_image });
             const roleExists = await userCollection.findOne({ email: user.email, role: { $exists: true } });
-            console.log('role checking: ', roleExists);
+            // console.log('role checking: ', roleExists);
             // update profile image
             if (!imageExists || (!user.profile_image && user.name) || !roleExists) {
                 const filter = { email: user.email };
@@ -92,7 +92,7 @@ const run = async () => {
                 const updatedUser = { $set: { ...user, role: 'user' } };
                 const result = await userCollection.updateOne(filter, updatedUser, options);
 
-                console.log('updated: ', result);
+                // console.log('updated: ', result);
 
                 return res.send(result);
             }
@@ -198,7 +198,7 @@ const run = async () => {
                 filter.headline = { $regex: req.query.search, $options: "i" };
             }
 
-            console.log(filter);
+            // console.log(filter);
 
             // if (req.query.role === 'admin') {
             //     delete filter.status;
@@ -313,7 +313,7 @@ const run = async () => {
         app.patch('/articles/:id', async (req, res) => {
             const article_id = req.params.id;
             const filter = { _id: new ObjectId(article_id) };
-            console.log('updated: ',req.body);
+            // console.log('updated: ',req.body);
             const updatedArticle = { $set: req.body };
             const options = { upsert: true };
 
@@ -329,11 +329,25 @@ const run = async () => {
             res.send(result);
         })
 
+        // get publishers
+        app.post('/publishers', verifyToken, verifyAdmin, async (req, res) => {
+            const publisher = req.body;
+            const publisherExists = await publisherCollection.findOne({ publisher: publisher.publisher });
+            // console.log(publisherExists);
+            if (publisherExists) {
+                return res.send({ message: 'Publisher Already Exists!' })
+            }
+
+            const result = await publisherCollection.insertOne(publisher);
+
+            res.send(result);
+        })
+
         // post new tags while posting an article
         app.post('/tags', verifyToken, async (req, res) => {
             const tags = req.body;
             const newTagsToAdd = [];
-            console.log(tags);
+            // console.log(tags);
             // filter new tags
             for (const tag of tags) {
                 if (tag.__isNew__) {
@@ -345,7 +359,7 @@ const run = async () => {
                 }
             }
 
-            console.log(newTagsToAdd);
+            // console.log(newTagsToAdd);
 
             if (newTagsToAdd.length > 0) {
                 const result = await tagCollection.insertMany(newTagsToAdd);

@@ -15,9 +15,10 @@ router.post('/', verifyToken, async (req, res) => {
 
     // check if a user is a free user
     const isFreeUser = await userCollection.findOne({ email: user.email, isPremium: false || null });
-
-    // if user has posted 1 blog don't allow to post any more article
-    if (isFreeUser) {
+    // check if a user is an admin
+    const isAdmin = await userCollection.findOne({ email: user.email, role: "admin" });
+    // if a free user (but not admin) has posted 1 blog don't allow to post any more article
+    if (isFreeUser && !isAdmin) {
         const articleCount = await articleCollection.countDocuments({ posted_by_email: user.email });
         if (articleCount >= 1) {
             return res.send({ message: 'Only Premium Users can post more than 1 Article!' });

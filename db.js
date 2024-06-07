@@ -16,6 +16,7 @@ export const userCollection = client.db("nexusDB").collection("users");
 export const publisherCollection = client.db("nexusDB").collection("publishers");
 export const articleCollection = client.db("nexusDB").collection("articles");
 export const tagCollection = client.db("nexusDB").collection("tags");
+export const paymentCollection = client.db("nexusDB").collection("payments");
 
 export const connectDB = async () => {
     try {

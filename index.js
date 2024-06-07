@@ -8,6 +8,7 @@ import articleRoutes from "./routes/articles.js";
 import publisherRoutes from "./routes/publishers.js";
 import tagRoutes from "./routes/tags.js";
 import jwtRoutes from "./routes/jwt.js";
+import paymentRoutes from "./routes/payment.js"
 import { client, connectDB } from "./db.js";
 
 dotenv.config();
@@ -25,6 +26,7 @@ app.use('/articles', articleRoutes);
 app.use('/publishers', publisherRoutes);
 app.use('/tags', tagRoutes);
 app.use('/jwt', jwtRoutes);
+app.use('/payment', paymentRoutes);
 
 app.get("/", (req, res) => {
     res.send("Nexus Server is Running!");

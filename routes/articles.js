@@ -1,19 +1,34 @@
 import express from "express";
 import { verifyToken, verifyAdmin } from "../middlewares/auth.js";
-import { articleCollection } from "../db.js";
+import { articleCollection, userCollection } from "../db.js";
 import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
 // post an article 
 router.post('/', verifyToken, async (req, res) => {
+    const user = req.user;
     const article = req.body;
+
+    // check if article already exists
     const articleExists = await articleCollection.findOne({ headline: article.headline });
+
+    // check if a user is a free user
+    const isFreeUser = await userCollection.findOne({ email: user.email, isPremium: false || null });
+
+    // if user has posted 1 blog don't allow to post any more article
+    if (isFreeUser) {
+        const articleCount = await articleCollection.countDocuments({ posted_by_email: user.email });
+        if (articleCount >= 1) {
+            return res.send({ message: 'Only Premium Users can post more than 1 Article!' });
+        }
+    }
 
     // check duplicate entries with headline
     if (articleExists) {
         return res.send({ message: 'Article Already Exists!' });
     }
+
 
     const result = await articleCollection.insertOne(article);
     res.send(result);
@@ -169,7 +184,7 @@ router.get('/user/:email', verifyToken, async (req, res) => {
 router.delete('/:id', verifyToken, async (req, res) => {
     const article_id = req.params.id;
     const user_email = req.query.email;
-    
+
     // filter with both id and email to be more sure
     const query = { _id: new ObjectId(article_id), posted_by_email: user_email };
     const result = await articleCollection.deleteOne(query);

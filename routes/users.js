@@ -44,10 +44,20 @@ router.get('/single', verifyToken, async (req, res) => {
 // make a user admin
 router.put('/', verifyToken, verifyAdmin, async (req, res) => {
     const user = req.body;
-    const query = { email: user.email };
+    const filter = { email: user.email };
     const options = { upsert: true };
     const updatedUser = { $set: user };
-    const result = await userCollection.updateOne(query, updatedUser, options);
+    const result = await userCollection.updateOne(filter, updatedUser, options);
+    res.send(result);
+});
+
+// update user after payment
+router.patch('/:email', verifyToken, async (req, res) => {
+    const user = req.body;
+    const filter = { email: req.params.email };
+    const options = { upsert: true };
+    const updatedUser = { $set: user };
+    const result = await userCollection.updateOne(filter, updatedUser, options);
     res.send(result);
 });
 

@@ -15,19 +15,41 @@ router.post('/', verifyToken, async (req, res) => {
     // check if user have pending plan
     const isPendingPlan = await paymentCollection.findOne({ user: user?.email, status: 'pending' });
 
+    // update pending payment if find any
     if (isPendingPlan) {
         const updated = await paymentCollection.updateOne(
             { user: user?.email },
             { $set: { ...paymentInfo } },
             { upsert: true }
         )
-        console.log(updated);
+        // console.log(updated);
         return res.send(updated);
     }
 
     const result = await paymentCollection.insertOne(paymentInfo);
     res.send(result);
 });
+
+// get single user's pending payment info
+router.get('/:email', verifyToken, async (req, res) => {
+    const filter = { user: req.params.email, status: 'pending' };
+    
+    const result = await paymentCollection.findOne(filter);
+
+    res.send(result);
+});
+
+// update payment info after successful transaction
+router.patch('/:email', verifyToken, async (req, res) => {
+    const paymentInfo = req.body;
+    const filter = { user: req.params.email, status: 'pending' };
+    const options = { upsert: true };
+    const updatedInfo = { $set: paymentInfo };
+
+    const result = await paymentCollection.updateOne(filter, updatedInfo, options);
+
+    res.send(result);
+})
 
 router.post('/create-payment-intent', async (req, res) => {
     const { price } = req.body;

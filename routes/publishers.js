@@ -6,7 +6,10 @@ const router = express.Router();
 
 // get publishers
 router.get('/', async (req, res) => {
-    const result = await publisherCollection.find().toArray();
+    // define data limit
+    const size = parseInt(req.query.size);
+
+    const result = await publisherCollection.find().limit(size).toArray();
     res.send(result);
 });
 
@@ -21,10 +24,10 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
     res.send(result);
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, verifyAdmin, async (req, res) => {
     const publisher_id = req.params.id;
     const query = { _id: new ObjectId(publisher_id) };
-    console.log(publisher_id);
+    // console.log(publisher_id);
     const result = await publisherCollection.deleteOne(query);
     res.send(result);
 })

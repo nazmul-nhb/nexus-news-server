@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
     res.send(result);
 });
 
-// create publisher
+// create publisher with admin account(s)
 router.post('/', verifyToken, verifyAdmin, async (req, res) => {
     const publisher = req.body;
     const publisherExists = await publisherCollection.findOne({ publisher: publisher.publisher });

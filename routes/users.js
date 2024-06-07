@@ -11,6 +11,7 @@ router.post('/', async (req, res) => {
     const imageExists = await userCollection.findOne({ email: user.email, profile_image: user.profile_image });
     const roleExists = await userCollection.findOne({ email: user.email, role: { $exists: true } });
 
+    // update profile image and role if there are changes
     if (!imageExists || (!user.profile_image && user.name) || !roleExists) {
         const filter = { email: user.email };
         const options = { upsert: true };

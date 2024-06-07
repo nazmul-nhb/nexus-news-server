@@ -9,6 +9,7 @@ router.post('/', verifyToken, async (req, res) => {
     const tags = req.body;
     const newTagsToAdd = [];
 
+    // filter new tags
     for (const tag of tags) {
         if (tag.__isNew__) {
             delete tag.__isNew__;

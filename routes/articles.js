@@ -10,6 +10,7 @@ router.post('/', verifyToken, async (req, res) => {
     const article = req.body;
     const articleExists = await articleCollection.findOne({ headline: article.headline });
 
+    // check duplicate entries with headline
     if (articleExists) {
         return res.send({ message: 'Article Already Exists!' });
     }
@@ -18,50 +19,67 @@ router.post('/', verifyToken, async (req, res) => {
     res.send(result);
 });
 
-// get all articles
+// get all approved articles for everyone
 router.get('/', async (req, res) => {
+    // define data limit
     const size = parseInt(req.query.size);
+
+    // manage sort query from client
     let sortBy = {};
     switch (req.query.sort) {
         case 'view_descending':
-            sortBy = { view_count: -1 };
+            sortBy = { view_count: -1 }
             break;
         case 'view_ascending':
-            sortBy = { view_count: 1 };
+            sortBy = { view_count: 1 }
             break;
         case 'time_descending':
-            sortBy = { posted_on: -1 };
+            sortBy = { posted_on: -1 }
             break;
         case 'time_ascending':
-            sortBy = { posted_on: 1 };
+            sortBy = { posted_on: 1 }
             break;
         case 'title_descending':
-            sortBy = { headline: -1 };
+            sortBy = { headline: -1 }
             break;
         case 'title_ascending':
-            sortBy = { headline: 1 };
+            sortBy = { headline: 1 }
             break;
+
         default:
             sortBy = {};
             break;
     }
 
     let filter = { status: "Approved" };
+    // filter by tag query from client
     if (req.query.tag && req.query.tag !== 'undefined') {
-        filter.tags = Array.isArray(req.query.tag) ? { $in: req.query.tag } : req.query.tag;
+        if (Array.isArray(req.query.tag)) {
+            filter.tags = { $in: req.query.tag };
+        } else {
+            filter.tags = req.query.tag;
+        }
     }
+
+    // filter by publisher
     if (req.query.publisher && req.query.publisher !== 'undefined') {
         filter.publisher = req.query.publisher;
     }
+
+    // search in article headlines/titles
     if (req.query.search) {
         filter.headline = { $regex: req.query.search, $options: "i" };
     }
 
-    const result = await articleCollection.find(filter).sort(sortBy).limit(size).toArray();
+    // console.log(filter);
+
+    const result = await articleCollection.find(filter).sort(sortBy).limit(size).toArray(); // exclude description after getting assignment result
+
     res.send(result);
 });
 
 // get all articles for admin
+// most codes are duplicated from the main route in case use cases change
 router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
     // define limit
     const size = parseInt(req.query.size);
@@ -108,6 +126,7 @@ router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
     if (req.query.publisher && req.query.publisher !== 'undefined') {
         filter.publisher = req.query.publisher;
     }
+
     // search in article headlines/titles
     if (req.query.search) {
         filter.headline = { $regex: req.query.search, $options: "i" };
@@ -127,7 +146,7 @@ router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
     res.send(result);
 });
 
-// get single article for users
+// get single article for verified users to see details
 router.get('/:id', verifyToken, async (req, res) => {
     const article_id = req.params.id;
     const filter = { _id: new ObjectId(article_id) };
@@ -150,6 +169,8 @@ router.get('/user/:email', verifyToken, async (req, res) => {
 router.delete('/:id', verifyToken, async (req, res) => {
     const article_id = req.params.id;
     const user_email = req.query.email;
+    
+    // filter with both id and email to be more sure
     const query = { _id: new ObjectId(article_id), posted_by_email: user_email };
     const result = await articleCollection.deleteOne(query);
     res.send(result);

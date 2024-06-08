@@ -1,18 +1,100 @@
 import express from "express";
 import Stripe from 'stripe';
 import { paymentCollection } from "../db.js";
-import { verifyToken } from "../middlewares/auth.js";
+import { verifyAdmin, verifyToken } from "../middlewares/auth.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET);
 
 const router = express.Router();
+
+
+
+// get aggregated subscription data for bar chart
+router.get('/subscription-stats', verifyToken, verifyAdmin, async (req, res) => {
+
+    console.log('came to collect stats');
+    const result = await paymentCollection.aggregate([
+        {
+            $match: {
+                status: "paid"
+            }
+        },
+        {
+            $group: {
+                _id: "$plan",
+                count: { $sum: 1 }
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                plan: "$_id",
+                count: 1
+            }
+        },
+        {
+            $sort: { count: -1 }
+        },
+        {
+            $group: {
+                _id: null,
+                total: { $sum: "$count" },
+                plans: { $push: "$$ROOT" }
+            }
+        },
+        {
+            $unwind: "$plans"
+        },
+        {
+            $project: {
+                plan: "$plans.plan",
+                count: "$plans.count",
+                percentage: {
+                    $multiply: [
+                        { $divide: ["$plans.count", "$total"] },
+                        100
+                    ]
+                }
+            }
+        }
+    ]).toArray();
+    console.log('Aggregation result:', result);
+    res.send(result);
+});
+
+router.get('/revenue-by-plan', verifyToken, verifyAdmin, async (req, res) => {
+
+    const result = await paymentCollection.aggregate([
+        {
+            $match: {
+                status: "paid"
+            }
+        },
+        {
+            $group: {
+                _id: "$plan",
+                revenue: { $sum: "$price" }
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                plan: "$_id",
+                revenue: 1
+            }
+        }
+    ]).toArray();
+    console.log('Revenue by plan:', result);
+    res.send(result);
+
+});
 
 // post payment
 router.post('/', verifyToken, async (req, res) => {
     const paymentInfo = req.body;
     const user = req.user;
 
-    // check if user have pending plan
+    // check if user has pending plan
     const isPendingPlan = await paymentCollection.findOne({ user: user?.email, status: 'pending' });
 
     // update pending payment if find any
@@ -33,7 +115,7 @@ router.post('/', verifyToken, async (req, res) => {
 // get single user's pending payment info
 router.get('/:email', verifyToken, async (req, res) => {
     const filter = { user: req.params.email, status: 'pending' };
-    
+
     const result = await paymentCollection.findOne(filter);
 
     res.send(result);
@@ -50,6 +132,7 @@ router.patch('/:email', verifyToken, async (req, res) => {
 
     res.send(result);
 });
+
 
 router.post('/create-payment-intent', async (req, res) => {
     const { price } = req.body;

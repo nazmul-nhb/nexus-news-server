@@ -11,8 +11,6 @@ const router = express.Router();
 
 // get aggregated subscription data for bar chart
 router.get('/subscription-stats', verifyToken, verifyAdmin, async (req, res) => {
-
-    console.log('came to collect stats');
     const result = await paymentCollection.aggregate([
         {
             $match: {
@@ -58,7 +56,9 @@ router.get('/subscription-stats', verifyToken, verifyAdmin, async (req, res) => 
             }
         }
     ]).toArray();
-    console.log('Aggregation result:', result);
+
+    // console.log('Aggregation result:', result);
+
     res.send(result);
 });
 

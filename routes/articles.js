@@ -92,7 +92,7 @@ router.get('/', async (req, res) => {
         filter.headline = { $regex: req.query.search, $options: "i" };
     }
 
-    console.log(filter);
+    // console.log(filter);
 
     const result = await articleCollection.find(filter).sort(sortBy).limit(size).toArray(); // exclude description after getting assignment result
 

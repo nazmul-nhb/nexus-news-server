@@ -22,10 +22,13 @@ export const connectDB = async () => {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
-        await client.connect();
-        console.log("Successfully Connected to MongoDB!");
+
+
+        // Send a ping to confirm a successful connection
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Successfully Connected to MongoDB!");
     } catch (error) {
-        console.error("Failed to connect to MongoDB", error);
+        console.error("Failed to Connect to MongoDB", error);
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();

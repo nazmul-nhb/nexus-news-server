@@ -162,6 +162,48 @@ router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
     res.send(result);
 });
 
+router.get('/publication-percentages', verifyToken, verifyAdmin, async (req, res) => {
+        const aggregationPipeline = [
+            {
+                $group: {
+                    _id: "$publisher",
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: "$count" },
+                    publications: {
+                        $push: {
+                            publisher: "$_id",
+                            count: "$count"
+                        }
+                    }
+                }
+            },
+            {
+                $unwind: "$publications"
+            },
+            {
+                $project: {
+                    _id: 0,
+                    publication: "$publications.publisher",
+                    percentage: {
+                        $multiply: [
+                            { $divide: ["$publications.count", "$total"] },
+                            100
+                        ]
+                    }
+                }
+            }
+        ];
+
+        const publicationPercentages = await articleCollection.aggregate(aggregationPipeline).toArray();
+
+        res.send(publicationPercentages);
+});
+
 // get single article for verified users to see details
 router.get('/:id', verifyToken, async (req, res) => {
     const article_id = req.params.id;

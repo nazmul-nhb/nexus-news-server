@@ -49,7 +49,7 @@ router.patch('/:email', verifyToken, async (req, res) => {
     const result = await paymentCollection.updateOne(filter, updatedInfo, options);
 
     res.send(result);
-})
+});
 
 router.post('/create-payment-intent', async (req, res) => {
     const { price } = req.body;

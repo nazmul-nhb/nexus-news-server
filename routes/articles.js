@@ -82,12 +82,17 @@ router.get('/', async (req, res) => {
         filter.publisher = req.query.publisher;
     }
 
+    // filter get premium articles
+    if (req.query.isPremium ==='true') {
+        filter.isPremium = true;
+    }
+
     // search in article headlines/titles
     if (req.query.search) {
         filter.headline = { $regex: req.query.search, $options: "i" };
     }
 
-    // console.log(filter);
+    console.log(filter);
 
     const result = await articleCollection.find(filter).sort(sortBy).limit(size).toArray(); // exclude description after getting assignment result
 

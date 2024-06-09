@@ -83,7 +83,7 @@ router.get('/', async (req, res) => {
     }
 
     // filter get premium articles
-    if (req.query.isPremium ==='true') {
+    if (req.query.isPremium === 'true') {
         filter.isPremium = true;
     }
 
@@ -103,6 +103,7 @@ router.get('/', async (req, res) => {
 // most codes are duplicated from the main route in case use cases change
 router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
     // define limit
+    const page = parseInt(req.query.page);
     const size = parseInt(req.query.size);
 
     // manage sort query from client
@@ -162,51 +163,58 @@ router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
         _id: 1, headline: 1, posted_by_email: 1, posted_on: 1, status: 1, publisher: 1, isPremium: 1
     };
 
-    const result = await articleCollection.find(filter).sort(sortBy).project(include).limit(size).toArray();
+    const result = await articleCollection.find(filter).sort(sortBy).skip(page * size).project(include).limit(size).toArray();
 
     res.send(result);
 });
 
+// get total article count
+router.get(`/article-count`, verifyToken, verifyAdmin, async (req, res) => {
+    const count = await articleCollection.countDocuments();
+
+    res.send({ count });
+});
+
 router.get('/publication-percentages', verifyToken, verifyAdmin, async (req, res) => {
-        const aggregationPipeline = [
-            {
-                $group: {
-                    _id: "$publisher",
-                    count: { $sum: 1 }
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    total: { $sum: "$count" },
-                    publications: {
-                        $push: {
-                            publisher: "$_id",
-                            count: "$count"
-                        }
-                    }
-                }
-            },
-            {
-                $unwind: "$publications"
-            },
-            {
-                $project: {
-                    _id: 0,
-                    publication: "$publications.publisher",
-                    percentage: {
-                        $multiply: [
-                            { $divide: ["$publications.count", "$total"] },
-                            100
-                        ]
+    const aggregationPipeline = [
+        {
+            $group: {
+                _id: "$publisher",
+                count: { $sum: 1 }
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                total: { $sum: "$count" },
+                publications: {
+                    $push: {
+                        publisher: "$_id",
+                        count: "$count"
                     }
                 }
             }
-        ];
+        },
+        {
+            $unwind: "$publications"
+        },
+        {
+            $project: {
+                _id: 0,
+                publication: "$publications.publisher",
+                percentage: {
+                    $multiply: [
+                        { $divide: ["$publications.count", "$total"] },
+                        100
+                    ]
+                }
+            }
+        }
+    ];
 
-        const publicationPercentages = await articleCollection.aggregate(aggregationPipeline).toArray();
+    const publicationPercentages = await articleCollection.aggregate(aggregationPipeline).toArray();
 
-        res.send(publicationPercentages);
+    res.send(publicationPercentages);
 });
 
 // get single article for verified users to see details

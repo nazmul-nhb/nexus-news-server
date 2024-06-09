@@ -64,8 +64,8 @@ router.patch('/:email', verifyToken, async (req, res) => {
 // get users count
 router.get('/count', async (req, res) => {
     const total_users = await userCollection.countDocuments({});
-    const normal_users = await userCollection.countDocuments({ isPremium: false || null });
     const premium_users = await userCollection.countDocuments({ isPremium: true });
+    const normal_users = total_users - premium_users;
     res.send({ total_users, normal_users, premium_users });
 });
 

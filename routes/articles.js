@@ -93,6 +93,10 @@ router.get('/', async (req, res) => {
     }
 
     // console.log(filter);
+    
+    // if (req.query.role === 'admin') {
+    //     delete filter.status;
+    // }
 
     const result = await articleCollection.find(filter).sort(sortBy).limit(size).toArray(); // exclude description after getting assignment result
 
@@ -100,7 +104,6 @@ router.get('/', async (req, res) => {
 });
 
 // get all articles for admin
-// most codes are duplicated from the main route in case use cases change
 router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
     // define limit
     const page = parseInt(req.query.page);
@@ -133,7 +136,7 @@ router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
             break;
     }
 
-    let filter = { status: "Approved" };
+    let filter = {};
 
     // filter by tag query from client
     if (req.query.tag && req.query.tag !== 'undefined') {
@@ -152,11 +155,6 @@ router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
     // search in article headlines/titles
     if (req.query.search) {
         filter.headline = { $regex: req.query.search, $options: "i" };
-    }
-
-    // make extra secured
-    if (req.query.role === 'admin') {
-        delete filter.status;
     }
 
     const include = {

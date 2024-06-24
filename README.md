@@ -1,6 +1,6 @@
 # Server for **Nexus News**
 
-- [Live Link](https://nexus-news-nhb.web.app)
+- [Live Link](https://nexus-news-nhb.vercel.app)
 
 ## Technologies Used in this Project
 

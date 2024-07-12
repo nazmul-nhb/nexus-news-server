@@ -30,7 +30,6 @@ router.post('/', verifyToken, async (req, res) => {
         return res.send({ message: 'Article Already Exists!' });
     }
 
-
     const result = await articleCollection.insertOne(article);
     res.send(result);
 });

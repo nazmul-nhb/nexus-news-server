@@ -173,6 +173,7 @@ router.get(`/article-count`, verifyToken, verifyAdmin, async (req, res) => {
     res.send({ count });
 });
 
+// get publishers's percentage data for pie chart
 router.get('/publication-percentages', verifyToken, verifyAdmin, async (req, res) => {
     const aggregationPipeline = [
         {

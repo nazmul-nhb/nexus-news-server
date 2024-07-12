@@ -8,7 +8,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET);
 const router = express.Router();
 
 
-
 // get aggregated subscription data for bar chart
 router.get('/subscription-stats', verifyToken, verifyAdmin, async (req, res) => {
     const result = await paymentCollection.aggregate([
@@ -62,6 +61,7 @@ router.get('/subscription-stats', verifyToken, verifyAdmin, async (req, res) => 
     res.send(result);
 });
 
+// get revenue vs plans data for graph
 router.get('/revenue-by-plan', verifyToken, verifyAdmin, async (req, res) => {
 
     const result = await paymentCollection.aggregate([
@@ -133,7 +133,7 @@ router.patch('/:email', verifyToken, async (req, res) => {
     res.send(result);
 });
 
-
+// payment intent for stripe
 router.post('/create-payment-intent', async (req, res) => {
     const { price } = req.body;
     const amount = parseInt(price * 100);
